@@ -1,66 +1,63 @@
 import React, { Component } from "react";
-import MapGL, { NavigationControl } from "react-map-gl";
+import { StaticMap } from "react-map-gl";
+import DeckGL, { GeoJsonLayer } from "deck.gl";
 
-const TOKEN = process.env.REACT_APP_MAPBOX_KEY;
+//Mapbox Token
+const MAPBOX_TOKEN = process.env.REACT_APP_MAPBOX_KEY;
 
-const navStyle = {
-  position: "absolute",
-  top: 0,
-  left: 0,
-  padding: "10px"
+//Geojson Data URL
+const DATA =
+  "https://github.com/landmrk/landmrk-developer-test/blob/master/data/National_Trust_Open_Data__Land__Always_Open.geojson";
+
+const LIGHT_SETTINGS = {
+  lightsPosition: [-125, 50.5, 5000, -122.8, 48.5, 8000],
+  ambientRatio: 0.2,
+  diffuseRatio: 0.5,
+  specularRatio: 0.3,
+  lightsStrength: [2.0, 0.0, 1.0, 0.0],
+  numberOfLights: 2
+};
+
+const INITIAL_VIEW_STATE = {
+  latitude: -35.280937,
+  longitude: 149.130005,
+  zoom: 13,
+  pitch: 0,
+  bearing: 0
 };
 
 export default class Map extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      viewport: {
-        latitude: 37.785164,
-        longitude: -100,
-        zoom: 2.8,
-        bearing: 0,
-        pitch: 0,
-        width: 500,
-        height: 500
-      }
-    };
-  }
+  renderLayer() {
+    const { data = DATA } = this.props;
 
-  componentWillMount() {
-    navigator.geolocation.getCurrentPosition(position => {
-      let longitude = position.coords.longitude;
-      let latitude = position.coords.latitude;
-    });
-    console.log("current location:", longitude, latitude);
-    this.setState({
-      longitude: longitude,
-      latitude: latitude
-    });
+    return [
+      new GeoJsonLayer({
+        id: "geoJson",
+        data,
+        filled: true,
+        lightSettings: LIGHT_SETTINGS
+      })
+    ];
   }
-
-  // _locateUser() {
-  //   // https://developer.mozilla.org/en-US/docs/Web/API/Geolocation/Using_geolocation
-  //   navigator.geolocation.getCurrentPosition(position => {
-  //     this.updateViewport({
-  //       longitude: position.coords.longitude,
-  //       latitude: position.coords.latitude
-  //     });
-  //   });
-  // }
 
   render() {
-    const { viewport } = this.state;
+    const { viewState, baseMap = true } = this.props;
 
     return (
-      <MapGL
-        {...viewport}
-        mapStyle="mapbox://styles/mapbox/dark-v9"
-        mapboxApiAccessToken={TOKEN}
+      <DeckGL
+        layers={this.renderLayer()}
+        initialViewState={INITIAL_VIEW_STATE}
+        viewState={viewState}
+        controller={true}
       >
-        <div className="nav" style={navStyle}>
-          <NavigationControl />
-        </div>
-      </MapGL>
+        {baseMap && (
+          <StaticMap
+            mapStyle="mapbox://styles/mapbox/dark-v9"
+            preventStyleDiffing={true}
+            mapboxApiAccessToken={MAPBOX_TOKEN}
+          />
+        )}
+      </DeckGL>
     );
   }
 }
