@@ -1,6 +1,7 @@
 import React, { Component } from "react";
 import ReactMapGL from "react-map-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
+import { fromJS } from "immutable";
 
 class Map extends Component {
   state = {
@@ -16,14 +17,11 @@ class Map extends Component {
   render() {
     return (
       <ReactMapGL
-        mapboxApiAccessToken={
-          "pk.eyJ1IjoibXVmZmlubWFuNzUiLCJhIjoiY2p0cG8xZmc3MDY4OTQ0cjB3dXRkYXdvZSJ9c8_6mudmNdj8bFbcq94nyw"
-        }
+        mapboxApiAccessToken={process.env.REACT_APP_MAPBOX_KEY}
         {...this.state.viewport}
         onViewportChange={viewport => this.setState({ viewport })}
       />
     );
   }
 }
-
 export default Map;
