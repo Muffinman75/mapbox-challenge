@@ -1,63 +1,99 @@
 import React, { Component } from "react";
+//import { render } from "react-dom";
 import { StaticMap } from "react-map-gl";
-import DeckGL, { GeoJsonLayer } from "deck.gl";
+import { json as requestJson } from "d3-request";
+import DeckGL, { ScatterplotLayer } from "deck.gl";
 
-//Mapbox Token
-const MAPBOX_TOKEN = process.env.REACT_APP_MAPBOX_KEY;
+// Set your mapbox token here
+const MAPBOX_TOKEN = process.env.REACT_APP_MAPBOX_KEY; // eslint-disable-line
 
-//Geojson Data URL
-const DATA =
-  "https://github.com/landmrk/landmrk-developer-test/blob/master/data/National_Trust_Open_Data__Land__Always_Open.geojson";
+// Source data CSV
+//const DATA_URL =
+// "https://raw.githubusercontent.com/landmrk/landmrk-developer-test/master/data/National_Trust_Open_Data__Land__Always_Open.geojson";
+// eslint-disable-line
 
-const LIGHT_SETTINGS = {
-  lightsPosition: [-125, 50.5, 5000, -122.8, 48.5, 8000],
-  ambientRatio: 0.2,
-  diffuseRatio: 0.5,
-  specularRatio: 0.3,
-  lightsStrength: [2.0, 0.0, 1.0, 0.0],
-  numberOfLights: 2
-};
+class Map extends Component {
+  constructor(props) {
+    super(props);
 
-const INITIAL_VIEW_STATE = {
-  latitude: -35.280937,
-  longitude: 149.130005,
-  zoom: 13,
-  pitch: 0,
-  bearing: 0
-};
+    this.state = {
+      viewPort: {
+        longitude: -2.5919,
+        latitude: 51.455311,
+        zoom: 11,
+        maxZoom: 16,
+        pitch: 0,
+        bearing: 0
+      }
+    };
 
-export default class Map extends Component {
-  renderLayer() {
-    const { data = DATA } = this.props;
+    this.locateUser = this.locateUser.bind(this);
+  }
 
+  locateUser() {
+    // https://developer.mozilla.org/en-US/docs/Web/API/Geolocation/Using_geolocation
+    navigator.geolocation.getCurrentPosition(position => {
+      let longitude = position.coords.longitude;
+      let latitude = position.coords.latitude;
+      console.log("current coords:", longitude, latitude);
+      this.setState({
+        viewPort: {
+          longitude: longitude,
+          latitude: latitude
+        }
+      });
+    });
+  }
+
+  renderLayers() {
+    //const { data = data, radius = 30, landColour = COLOUR } = this.props;
+    const data =
+      "https://raw.githubusercontent.com/landmrk/landmrk-developer-test/master/data/National_Trust_Open_Data__Land__Always_Open.geojson";
+    console.log("data:", data);
     return [
-      new GeoJsonLayer({
-        id: "geoJson",
+      new ScatterplotLayer({
+        id: "scatter-plot",
         data,
-        filled: true,
-        lightSettings: LIGHT_SETTINGS
+        radiusScale: 50,
+        opacity: 0.8,
+        radiusMinPixels: 0.25,
+        getPosition: d => [d.coordinates[1], d.coordinates[0]],
+        getRadius: 1,
+        getLineColor: d => [0, 128, 255],
+        getFillColor: d => [0, 150, 255]
       })
     ];
   }
 
+  componentDidMount() {
+    this.locateUser();
+    requestJson("data/NationalTrustLandData.geojson", (error, response) => {
+      if (!error) {
+        const data = this._loadData(response);
+        return data;
+      }
+    });
+  }
+
   render() {
-    const { viewState, baseMap = true } = this.props;
+    //const { viewState, controller = true, baseMap = true } = this.props;
 
     return (
       <DeckGL
-        layers={this.renderLayer()}
-        initialViewState={INITIAL_VIEW_STATE}
-        viewState={viewState}
-        controller={true}
+        layers={this.renderLayers()}
+        initialViewState={this.state.viewPort}
+        //viewState={viewState}
+        //controller={controller}
       >
-        {baseMap && (
-          <StaticMap
-            mapStyle="mapbox://styles/mapbox/dark-v9"
-            preventStyleDiffing={true}
-            mapboxApiAccessToken={MAPBOX_TOKEN}
-          />
-        )}
+        <StaticMap
+          reuseMaps
+          mapStyle="mapbox://styles/mapbox/light-v9"
+          preventStyleDiffing={true}
+          mapboxApiAccessToken={MAPBOX_TOKEN}
+        />
       </DeckGL>
     );
   }
 }
+
+export default Map;

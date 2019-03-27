@@ -3,7 +3,11 @@ import Map from "./components/Map";
 
 class App extends Component {
   render() {
-    return <Map />;
+    return (
+      <div className="container">
+        <Map />
+      </div>
+    );
   }
 }
 
