@@ -3,14 +3,10 @@ import React, { Component } from "react";
 import { StaticMap } from "react-map-gl";
 import { json as requestJson } from "d3-request";
 import DeckGL, { ScatterplotLayer } from "deck.gl";
+import "mapbox-gl/dist/mapbox-gl.css";
 
 // Set your mapbox token here
 const MAPBOX_TOKEN = process.env.REACT_APP_MAPBOX_KEY; // eslint-disable-line
-
-// Source data CSV
-//const DATA_URL =
-// "https://raw.githubusercontent.com/landmrk/landmrk-developer-test/master/data/National_Trust_Open_Data__Land__Always_Open.geojson";
-// eslint-disable-line
 
 class Map extends Component {
   constructor(props) {
@@ -28,10 +24,12 @@ class Map extends Component {
     };
 
     this.locateUser = this.locateUser.bind(this);
+    this.loadData = this.loadData.bind(this);
+    this.renderLayers = this.renderLayers.bind(this);
   }
 
   locateUser() {
-    // https://developer.mozilla.org/en-US/docs/Web/API/Geolocation/Using_geolocation
+    // Finds current location of user
     navigator.geolocation.getCurrentPosition(position => {
       let longitude = position.coords.longitude;
       let latitude = position.coords.latitude;
@@ -45,18 +43,27 @@ class Map extends Component {
     });
   }
 
+  componentDidMount() {
+    this.locateUser();
+    requestJson("data/NationalTrustLandData.geojson", (error, response) => {
+      if (!error) {
+        const data = this.loadData(response);
+        console.log("data:", data);
+        return data;
+      }
+    });
+  }
+
   renderLayers() {
-    //const { data = data, radius = 30, landColour = COLOUR } = this.props;
-    const data =
-      "https://raw.githubusercontent.com/landmrk/landmrk-developer-test/master/data/National_Trust_Open_Data__Land__Always_Open.geojson";
-    console.log("data:", data);
     return [
+      // Attempting to load geojson data for ScatterplotLayer
       new ScatterplotLayer({
+        // Not working
         id: "scatter-plot",
-        data,
+        //data,
         radiusScale: 50,
         opacity: 0.8,
-        radiusMinPixels: 0.25,
+        radiusMinPixels: 15,
         getPosition: d => [d.coordinates[1], d.coordinates[0]],
         getRadius: 1,
         getLineColor: d => [0, 128, 255],
@@ -65,30 +72,24 @@ class Map extends Component {
     ];
   }
 
-  componentDidMount() {
-    this.locateUser();
-    requestJson("data/NationalTrustLandData.geojson", (error, response) => {
-      if (!error) {
-        const data = this._loadData(response);
-        return data;
-      }
-    });
-  }
+  loadData = data => {
+    // Set data to state when it's loaded into component
+    this.setState({ data });
+  };
 
   render() {
-    //const { viewState, controller = true, baseMap = true } = this.props;
-
     return (
       <DeckGL
         layers={this.renderLayers()}
         initialViewState={this.state.viewPort}
-        //viewState={viewState}
-        //controller={controller}
       >
         <StaticMap
+          containerStyle={{
+            height: "100vh",
+            width: "100vw"
+          }}
           reuseMaps
           mapStyle="mapbox://styles/mapbox/light-v9"
-          preventStyleDiffing={true}
           mapboxApiAccessToken={MAPBOX_TOKEN}
         />
       </DeckGL>
